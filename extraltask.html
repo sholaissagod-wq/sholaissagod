@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tasks</title>
+<link rel="stylesheet" href="extra.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>shola shitty website</h1>
+      <span id="count"></span>
+    </header>
+
+    <form id="add-form">
+      <input type="text" id="new-task" placeholder="Add a task…" autocomplete="off">
+      <button type="submit">Add</button>
+    </form>
+
+    <div class="filters">
+      <button data-filter="all" class="active">All</button>
+      <button data-filter="active">Active</button>
+      <button data-filter="done">Done</button>
+    </div>
+
+    <ul id="list"></ul>
+    <p class="empty" id="empty-msg" style="display:none;">Nothing here. Add a task to get started.</p>
+    <p>© 2026 Shola weird Website &emsp;&emsp; sorry for the delay,i made 3 before i could get this right</p>
+  </div>
+
+
+ <script>
+  const STORAGE_KEY = 'shola-tasks';
+
+  // to load saved tasks from localStorage.
+  // If nothing has been saved yet, use the default tasks.
+  let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+    { id: 1, text: 'tell auntie kanyin sorry', done: false },
+    { id: 2, text: 'disturb my ex', done: false },
+    { id: 3, text: 'feed my cat', done: true }
+  ];
+
+  let filter = 'all';
+
+  // to make sure new IDs don't conflict with existing tasks
+  let nextId = tasks.length
+    ? Math.max(...tasks.map(t => t.id)) + 1
+    : 1;
+
+  const list = document.getElementById('list');
+  const emptyMsg = document.getElementById('empty-msg');
+  const countEl = document.getElementById('count');
+  const form = document.getElementById('add-form');
+  const input = document.getElementById('new-task');
+
+  // Save tasks to localStorage
+  function saveTasks() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }
+
+  function render() {
+    list.innerHTML = '';
+
+    const visible = tasks.filter(t =>
+      filter === 'all'
+        ? true
+        : filter === 'active'
+          ? !t.done
+          : t.done
+    );
+
+    emptyMsg.style.display = visible.length ? 'none' : 'block';
+
+    visible.forEach(t => {
+      const li = document.createElement('li');
+      li.className = t.done ? 'done' : '';
+
+      const check = document.createElement('div');
+      check.className = 'check';
+
+      check.innerHTML = `
+        <svg viewBox="0 0 12 12" fill="none">
+          <path
+            d="M2 6l3 3 5-6"
+            stroke="white"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      `;
+
+      check.onclick = () => {
+        t.done = !t.done;
+
+        // to save the new completed/active state
+        saveTasks();
+
+        render();
+      };
+
+      const text = document.createElement('span');
+      text.className = 'text';
+      text.textContent = t.text;
+
+      const remove = document.createElement('button');
+      remove.className = 'remove';
+      remove.textContent = 'Remove';
+
+      remove.onclick = () => {
+        tasks = tasks.filter(x => x.id !== t.id);
+
+        // to save after removing
+        saveTasks();
+
+        render();
+      };
+
+      li.append(check, text, remove);
+      list.appendChild(li);
+    });
+
+    const remaining = tasks.filter(t => !t.done).length;
+
+    countEl.textContent =
+      remaining === 0 ? 'All done' : remaining + ' left';
+  }
+
+  form.onsubmit = (e) => {
+    e.preventDefault();
+
+    const val = input.value.trim();
+
+    if (!val) return;
+
+    tasks.push({
+      id: nextId++,
+      text: val,
+      done: false
+    });
+
+    // to save the newly added task
+    saveTasks();
+
+    input.value = '';
+
+    render();
+  };
+
+  document.querySelectorAll('.filters button').forEach(btn => {
+    btn.onclick = () => {
+      document
+        .querySelectorAll('.filters button')
+        .forEach(b => b.classList.remove('active'));
+
+      btn.classList.add('active');
+
+      filter = btn.dataset.filter;
+
+      render();
+    };
+  });
+
+  // to display saved tasks when the page loads
+  render();
+  </script>
+</body>
+</html>
